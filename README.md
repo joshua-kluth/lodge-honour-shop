@@ -15,7 +15,7 @@ A simple web application for logging items taken from a lodge shop using an hono
 
 ## Live Demo
 
-[View the live application](https://yourusername.github.io/lodge-shop-logger/)
+[View the live application](https://joshua-kluth.github.io/lodge-honour-shop/)
 
 ## Setup Instructions
 

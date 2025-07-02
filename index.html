@@ -245,6 +245,33 @@
             margin-top: 5px;
         }
 
+        .bottom-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+
+        .bottom-btn {
+            flex: 1;
+            max-width: 200px;
+            padding: 12px 20px;
+            background-color: #cf6363;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            display: inline-block;
+        }
+
+        .bottom-btn:hover {
+            background-color: #aa4f4f;
+            color: white;
+            text-decoration: none;
+        }
+
         @media (max-width: 600px) {
             .item-row {
                 flex-direction: column;
@@ -304,6 +331,11 @@
         </form>
         
         <div id="message" class="message"></div>
+
+        <div class="bottom-buttons">
+            <a href="https://docs.google.com/spreadsheets/d/1Ugzw97_bIJZnlpe7DlRE8mrdj0glGz0Hu3EJc0B2nWo/edit?usp=sharing" target="_blank" class="bottom-btn">Honour Shop Log</a>
+            <a href="https://docs.google.com/spreadsheets/d/1Mwbguv6NHwlv_Uvbdy95rnr54MaxRBCc-lcw1mUDbDg/edit?usp=sharing" target="_blank" class="bottom-btn">Items Sheet</a>
+        </div>
     </div>
 
     <script>
