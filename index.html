@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 500px;
+            max-width: 600px;
             margin: 50px auto;
             padding: 20px;
             background-color: #f5f5f5;
@@ -37,7 +37,7 @@
             color: #555;
         }
         
-        input[type="text"], select {
+        input[type="text"], input[type="number"], select {
             width: 100%;
             padding: 10px;
             border: 2px solid #ddd;
@@ -46,7 +46,7 @@
             box-sizing: border-box;
         }
         
-        input[type="text"]:focus, select:focus {
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
             border-color: #4CAF50;
             outline: none;
         }
@@ -75,6 +75,105 @@
         
         .toggle-btn:hover {
             background-color: #1976D2;
+        }
+
+        .item-selection {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #fafafa;
+        }
+
+        .item-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .item-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .item-select {
+            flex: 2;
+            min-width: 200px;
+        }
+
+        .quantity-input {
+            flex: 0 0 80px;
+            min-width: 80px;
+        }
+
+        .price-display {
+            flex: 0 0 80px;
+            min-width: 80px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .remove-item {
+            flex: 0 0 40px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .remove-item:hover {
+            background-color: #c82333;
+        }
+
+        .add-item-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .add-item-btn:hover {
+            background-color: #218838;
+        }
+
+        .total-section {
+            background-color: #e8f5e8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .total-amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #28a745;
+            margin: 10px 0;
+        }
+
+        .item-count {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
         }
         
         button {
@@ -137,14 +236,32 @@
             color: #666;
             margin-top: 5px;
         }
+
+        .items-count {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .item-row {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .item-select, .quantity-input, .price-display {
+                flex: none;
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🏪 Lodge Shop Logger</h1>
         
-        <div id="loadingUsers" class="loading" style="display: none;">
-            Loading previous users...
+        <div id="loadingData" class="loading" style="display: none;">
+            Loading data...
         </div>
         
         <form id="shopForm">
@@ -168,23 +285,20 @@
             </div>
             
             <div class="form-group">
-                <label for="itemSelect">Item Taken:</label>
-                <select id="itemSelect" name="itemSelect" required>
-                    <option value="">-- Select an item --</option>
-                    <option value="Coke">Coke</option>
-                    <option value="Pepsi">Pepsi</option>
-                    <option value="Water">Water</option>
-                    <option value="Mars Bar">Mars Bar</option>
-                    <option value="Snickers">Snickers</option>
-                    <option value="Kit Kat">Kit Kat</option>
-                    <option value="Chips">Chips</option>
-                    <option value="Crackers">Crackers</option>
-                    <option value="Nuts">Nuts</option>
-                    <option value="Cookies">Cookies</option>
-                </select>
+                <label>Items & Quantities:</label>
+                <div class="item-selection" id="itemSelection">
+                    <!-- Item rows will be added here dynamically -->
+                </div>
+                <button type="button" class="add-item-btn" id="addItemBtn">+ Add Another Item</button>
+                <div class="items-count" id="itemsCount"></div>
+            </div>
+
+            <div class="total-section">
+                <div class="item-count" id="totalItemCount">0 items selected</div>
+                <div class="total-amount" id="totalAmount">$0.00</div>
             </div>
             
-            <button type="submit" id="submitBtn">Log Item</button>
+            <button type="submit" id="submitBtn">Log Items</button>
         </form>
         
         <div id="message" class="message"></div>
@@ -192,8 +306,6 @@
 
     <script>
         // *** IMPORTANT: Replace this URL with your Google Apps Script web app URL ***
-        // After deploying your Apps Script, you'll get a URL that looks like:
-        // https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykAno970458D-m_bPok0-4NQE1OVfQmgfa3ctRJqdWJRc5iKv-MZujAEJT-rGK5jRw/exec';
         
         // Get form elements
@@ -203,17 +315,45 @@
         const nameInput = document.getElementById('nameInput');
         const nameSelect = document.getElementById('nameSelect');
         const toggleBtn = document.getElementById('toggleNameInput');
-        const loadingDiv = document.getElementById('loadingUsers');
+        const loadingDiv = document.getElementById('loadingData');
         const usersCountDiv = document.getElementById('usersCount');
+        const itemsCountDiv = document.getElementById('itemsCount');
+        const itemSelection = document.getElementById('itemSelection');
+        const addItemBtn = document.getElementById('addItemBtn');
+        const totalAmountDiv = document.getElementById('totalAmount');
+        const totalItemCountDiv = document.getElementById('totalItemCount');
         
-        // Track which input method is active
+        // Track application state
         let useDropdown = false;
         let existingUsers = [];
+        let availableItems = [];
+        let itemsWithPrices = {}; // Will store {itemName: price}
+        let itemRowCounter = 0;
         
-        // Load existing users when page loads
-        window.addEventListener('load', loadExistingUsers);
+        // Load data when page loads
+        window.addEventListener('load', initializeApp);
         
-        // Toggle between text input and dropdown
+        // Initialize the app
+        async function initializeApp() {
+            loadingDiv.style.display = 'block';
+            
+            try {
+                await Promise.all([
+                    loadExistingUsers(),
+                    loadAvailableItems()
+                ]);
+                
+                // Add the first item row
+                addItemRow();
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                showMessage('Error loading data. Please refresh the page.', 'error');
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+        
+        // Toggle between text input and dropdown for names
         toggleBtn.addEventListener('click', function() {
             useDropdown = !useDropdown;
             
@@ -231,9 +371,11 @@
                 nameInput.setAttribute('required', 'required');
             }
             
-            // Clear any previous messages
             messageDiv.style.display = 'none';
         });
+        
+        // Add item button event
+        addItemBtn.addEventListener('click', addItemRow);
         
         // Load existing users from Google Sheet
         async function loadExistingUsers() {
@@ -242,10 +384,7 @@
                 return;
             }
             
-            loadingDiv.style.display = 'block';
-            
             try {
-                // Request existing users from the Apps Script
                 const response = await fetch(SCRIPT_URL + '?action=getUsers', {
                     method: 'GET'
                 });
@@ -255,22 +394,75 @@
                     existingUsers = users;
                     populateUserDropdown(users);
                     updateUsersCount(users.length);
-                } else {
-                    console.error('Failed to load existing users');
                 }
             } catch (error) {
                 console.error('Error loading existing users:', error);
-            } finally {
-                loadingDiv.style.display = 'none';
             }
         }
         
-        // Populate the dropdown with existing users
+        // Load available items with prices from Google Sheet
+        async function loadAvailableItems() {
+            if (SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                console.log('Google Apps Script URL not configured yet');
+                return;
+            }
+            
+            try {
+                const response = await fetch(SCRIPT_URL + '?action=getItems', {
+                    method: 'GET'
+                });
+                
+                if (response.ok) {
+                    const items = await response.json();
+                    availableItems = items.map(item => item.name);
+                    
+                    // Create price lookup object
+                    itemsWithPrices = {};
+                    items.forEach(item => {
+                        itemsWithPrices[item.name] = item.price;
+                    });
+                    
+                    updateItemsCount(items.length);
+                } else {
+                    console.error('Failed to load available items');
+                    // Fallback to hardcoded items
+                    setupFallbackItems();
+                }
+            } catch (error) {
+                console.error('Error loading available items:', error);
+                setupFallbackItems();
+            }
+        }
+        
+        // Setup fallback items with default prices
+        function setupFallbackItems() {
+            const fallbackItems = [
+                {name: 'Coke', price: 2.50},
+                {name: 'Pepsi', price: 2.50},
+                {name: 'Water', price: 1.50},
+                {name: 'Mars Bar', price: 3.00},
+                {name: 'Snickers', price: 3.00},
+                {name: 'Kit Kat', price: 3.00},
+                {name: 'Chips', price: 4.00},
+                {name: 'Crackers', price: 2.00},
+                {name: 'Nuts', price: 5.00},
+                {name: 'Cookies', price: 3.50}
+            ];
+            
+            availableItems = fallbackItems.map(item => item.name);
+            itemsWithPrices = {};
+            fallbackItems.forEach(item => {
+                itemsWithPrices[item.name] = item.price;
+            });
+            
+            updateItemsCount(fallbackItems.length);
+            showMessage('Using default items (couldn\'t load from sheet)', 'error');
+        }
+        
+        // Populate user dropdown
         function populateUserDropdown(users) {
-            // Clear existing options except the first one
             nameSelect.innerHTML = '<option value="">-- Select your name --</option>';
             
-            // Add each user as an option
             users.forEach(user => {
                 const option = document.createElement('option');
                 option.value = user;
@@ -278,13 +470,123 @@
                 nameSelect.appendChild(option);
             });
             
-            // Show the toggle button only if there are users
             if (users.length > 0) {
                 toggleBtn.style.display = 'block';
             }
         }
         
-        // Update the users count display
+        // Add a new item row
+        function addItemRow() {
+            itemRowCounter++;
+            const rowId = `item-row-${itemRowCounter}`;
+            
+            const itemRow = document.createElement('div');
+            itemRow.className = 'item-row';
+            itemRow.id = rowId;
+            
+            // Item select dropdown
+            const itemSelect = document.createElement('select');
+            itemSelect.className = 'item-select';
+            itemSelect.innerHTML = '<option value="">-- Select an item --</option>';
+            
+            availableItems.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                option.textContent = item;
+                itemSelect.appendChild(option);
+            });
+            
+            // Quantity input
+            const quantityInput = document.createElement('input');
+            quantityInput.type = 'number';
+            quantityInput.className = 'quantity-input';
+            quantityInput.min = '1';
+            quantityInput.value = '1';
+            quantityInput.placeholder = 'Qty';
+            
+            // Price display
+            const priceDisplay = document.createElement('div');
+            priceDisplay.className = 'price-display';
+            priceDisplay.textContent = '$0.00';
+            
+            // Remove button
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'remove-item';
+            removeBtn.innerHTML = '×';
+            removeBtn.title = 'Remove item';
+            
+            // Event listeners
+            itemSelect.addEventListener('change', () => updateRowPrice(rowId));
+            quantityInput.addEventListener('input', () => updateRowPrice(rowId));
+            removeBtn.addEventListener('click', () => removeItemRow(rowId));
+            
+            // Assemble the row
+            itemRow.appendChild(itemSelect);
+            itemRow.appendChild(quantityInput);
+            itemRow.appendChild(priceDisplay);
+            itemRow.appendChild(removeBtn);
+            
+            itemSelection.appendChild(itemRow);
+            updateTotal();
+        }
+        
+        // Update price for a specific row
+        function updateRowPrice(rowId) {
+            const row = document.getElementById(rowId);
+            const itemSelect = row.querySelector('.item-select');
+            const quantityInput = row.querySelector('.quantity-input');
+            const priceDisplay = row.querySelector('.price-display');
+            
+            const selectedItem = itemSelect.value;
+            const quantity = parseInt(quantityInput.value) || 0;
+            
+            if (selectedItem && itemsWithPrices[selectedItem]) {
+                const unitPrice = itemsWithPrices[selectedItem];
+                const totalPrice = unitPrice * quantity;
+                priceDisplay.textContent = `$${totalPrice.toFixed(2)}`;
+            } else {
+                priceDisplay.textContent = '$0.00';
+            }
+            
+            updateTotal();
+        }
+        
+        // Remove an item row
+        function removeItemRow(rowId) {
+            const rows = document.querySelectorAll('.item-row');
+            if (rows.length > 1) { // Keep at least one row
+                const row = document.getElementById(rowId);
+                row.remove();
+                updateTotal();
+            }
+        }
+        
+        // Update total amount and item count
+        function updateTotal() {
+            const rows = document.querySelectorAll('.item-row');
+            let totalAmount = 0;
+            let totalItems = 0;
+            
+            rows.forEach(row => {
+                const itemSelect = row.querySelector('.item-select');
+                const quantityInput = row.querySelector('.quantity-input');
+                
+                const selectedItem = itemSelect.value;
+                const quantity = parseInt(quantityInput.value) || 0;
+                
+                if (selectedItem && itemsWithPrices[selectedItem]) {
+                    const unitPrice = itemsWithPrices[selectedItem];
+                    totalAmount += unitPrice * quantity;
+                    totalItems += quantity;
+                }
+            });
+            
+            totalAmountDiv.textContent = `$${totalAmount.toFixed(2)}`;
+            totalItemCountDiv.textContent = `${totalItems} item${totalItems === 1 ? '' : 's'} selected`;
+        }
+        
+        // Update counts
         function updateUsersCount(count) {
             if (count > 0) {
                 usersCountDiv.textContent = `${count} previous user${count === 1 ? '' : 's'} found`;
@@ -293,52 +595,80 @@
             }
         }
         
+        function updateItemsCount(count) {
+            if (count > 0) {
+                itemsCountDiv.textContent = `${count} item${count === 1 ? '' : 's'} available`;
+            } else {
+                itemsCountDiv.textContent = 'No items loaded';
+            }
+        }
+        
         // Handle form submission
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Get the name from whichever input is active
+            // Get the name
             const userName = useDropdown ? 
                 nameSelect.value.trim() : 
                 nameInput.value.trim();
-            const itemSelect = document.getElementById('itemSelect').value;
             
-            // Basic validation
             if (!userName) {
                 showMessage('Please enter or select your name', 'error');
                 return;
             }
             
-            if (!itemSelect) {
-                showMessage('Please select an item', 'error');
+            // Collect all selected items
+            const selectedItems = [];
+            const rows = document.querySelectorAll('.item-row');
+            
+            rows.forEach(row => {
+                const itemSelect = row.querySelector('.item-select');
+                const quantityInput = row.querySelector('.quantity-input');
+                
+                const selectedItem = itemSelect.value;
+                const quantity = parseInt(quantityInput.value) || 0;
+                
+                if (selectedItem && quantity > 0) {
+                    selectedItems.push({
+                        item: selectedItem,
+                        quantity: quantity,
+                        price: itemsWithPrices[selectedItem] || 0
+                    });
+                }
+            });
+            
+            if (selectedItems.length === 0) {
+                showMessage('Please select at least one item', 'error');
                 return;
             }
             
-            // Disable submit button during submission
+            // Calculate total
+            const totalAmount = selectedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            // Disable submit button
             submitBtn.disabled = true;
             submitBtn.textContent = 'Logging...';
             
             try {
-                // Create the data object to send
                 const formData = new FormData();
                 formData.append('name', userName);
-                formData.append('item', itemSelect);
+                formData.append('items', JSON.stringify(selectedItems));
+                formData.append('totalAmount', totalAmount.toFixed(2));
                 formData.append('timestamp', new Date().toISOString());
-                formData.append('action', 'logItem');
+                formData.append('action', 'logItems');
                 
-                // Send POST request to Google Apps Script
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: formData
                 });
                 
                 if (response.ok) {
-                    showMessage('Item logged successfully! ✅', 'success');
+                    showMessage('Items logged successfully! ✅', 'success');
                     
-                    // If this is a new user (using text input), add them to the dropdown
+                    // Update user list if new user
                     if (!useDropdown && !existingUsers.includes(userName)) {
                         existingUsers.push(userName);
-                        existingUsers.sort(); // Keep alphabetical order
+                        existingUsers.sort();
                         populateUserDropdown(existingUsers);
                         updateUsersCount(existingUsers.length);
                     }
@@ -349,7 +679,11 @@
                     } else {
                         nameInput.value = '';
                     }
-                    document.getElementById('itemSelect').value = '';
+                    
+                    // Reset item rows
+                    itemSelection.innerHTML = '';
+                    itemRowCounter = 0;
+                    addItemRow();
                     
                 } else {
                     throw new Error('Network response was not ok');
@@ -357,28 +691,26 @@
                 
             } catch (error) {
                 console.error('Error:', error);
-                showMessage('Error logging item. Please try again. ❌', 'error');
+                showMessage('Error logging items. Please try again. ❌', 'error');
             } finally {
-                // Re-enable submit button
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Log Item';
+                submitBtn.textContent = 'Log Items';
             }
         });
         
-        // Function to show success/error messages
+        // Show messages
         function showMessage(text, type) {
             messageDiv.textContent = text;
             messageDiv.className = `message ${type}`;
             messageDiv.style.display = 'block';
             
-            // Hide message after 5 seconds
             setTimeout(() => {
                 messageDiv.style.display = 'none';
             }, 5000);
         }
         
         // Clear message when user interacts with form
-        [nameInput, nameSelect, document.getElementById('itemSelect')].forEach(element => {
+        [nameInput, nameSelect].forEach(element => {
             element.addEventListener('input', () => {
                 messageDiv.style.display = 'none';
             });
