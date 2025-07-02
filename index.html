@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lodge Shop Logger</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        input[type="text"]:focus, select:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        
+        .name-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        
+        .name-input-group > div {
+            flex: 1;
+        }
+        
+        .toggle-btn {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+            height: 42px;
+        }
+        
+        .toggle-btn:hover {
+            background-color: #1976D2;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            display: none;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+        
+        #nameSelect {
+            display: none;
+        }
+        
+        #nameInput {
+            display: block;
+        }
+        
+        .users-count {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏪 Lodge Shop Logger</h1>
+        
+        <div id="loadingUsers" class="loading" style="display: none;">
+            Loading previous users...
+        </div>
+        
+        <form id="shopForm">
+            <div class="form-group">
+                <label for="userName">Your Name:</label>
+                <div class="name-input-group">
+                    <div>
+                        <!-- Text input for new names -->
+                        <input type="text" id="nameInput" name="nameInput" placeholder="Enter your name">
+                        
+                        <!-- Dropdown for existing users (hidden by default) -->
+                        <select id="nameSelect" name="nameSelect">
+                            <option value="">-- Select your name --</option>
+                        </select>
+                    </div>
+                    <button type="button" class="toggle-btn" id="toggleNameInput">
+                        Use List
+                    </button>
+                </div>
+                <div class="users-count" id="usersCount"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="itemSelect">Item Taken:</label>
+                <select id="itemSelect" name="itemSelect" required>
+                    <option value="">-- Select an item --</option>
+                    <option value="Coke">Coke</option>
+                    <option value="Pepsi">Pepsi</option>
+                    <option value="Water">Water</option>
+                    <option value="Mars Bar">Mars Bar</option>
+                    <option value="Snickers">Snickers</option>
+                    <option value="Kit Kat">Kit Kat</option>
+                    <option value="Chips">Chips</option>
+                    <option value="Crackers">Crackers</option>
+                    <option value="Nuts">Nuts</option>
+                    <option value="Cookies">Cookies</option>
+                </select>
+            </div>
+            
+            <button type="submit" id="submitBtn">Log Item</button>
+        </form>
+        
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+        // *** IMPORTANT: Replace this URL with your Google Apps Script web app URL ***
+        // After deploying your Apps Script, you'll get a URL that looks like:
+        // https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
+        const SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+        
+        // Get form elements
+        const form = document.getElementById('shopForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const messageDiv = document.getElementById('message');
+        const nameInput = document.getElementById('nameInput');
+        const nameSelect = document.getElementById('nameSelect');
+        const toggleBtn = document.getElementById('toggleNameInput');
+        const loadingDiv = document.getElementById('loadingUsers');
+        const usersCountDiv = document.getElementById('usersCount');
+        
+        // Track which input method is active
+        let useDropdown = false;
+        let existingUsers = [];
+        
+        // Load existing users when page loads
+        window.addEventListener('load', loadExistingUsers);
+        
+        // Toggle between text input and dropdown
+        toggleBtn.addEventListener('click', function() {
+            useDropdown = !useDropdown;
+            
+            if (useDropdown) {
+                nameInput.style.display = 'none';
+                nameSelect.style.display = 'block';
+                toggleBtn.textContent = 'Type Name';
+                nameInput.removeAttribute('required');
+                nameSelect.setAttribute('required', 'required');
+            } else {
+                nameInput.style.display = 'block';
+                nameSelect.style.display = 'none';
+                toggleBtn.textContent = 'Use List';
+                nameSelect.removeAttribute('required');
+                nameInput.setAttribute('required', 'required');
+            }
+            
+            // Clear any previous messages
+            messageDiv.style.display = 'none';
+        });
+        
+        // Load existing users from Google Sheet
+        async function loadExistingUsers() {
+            if (SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                console.log('Google Apps Script URL not configured yet');
+                return;
+            }
+            
+            loadingDiv.style.display = 'block';
+            
+            try {
+                // Request existing users from the Apps Script
+                const response = await fetch(SCRIPT_URL + '?action=getUsers', {
+                    method: 'GET'
+                });
+                
+                if (response.ok) {
+                    const users = await response.json();
+                    existingUsers = users;
+                    populateUserDropdown(users);
+                    updateUsersCount(users.length);
+                } else {
+                    console.error('Failed to load existing users');
+                }
+            } catch (error) {
+                console.error('Error loading existing users:', error);
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+        
+        // Populate the dropdown with existing users
+        function populateUserDropdown(users) {
+            // Clear existing options except the first one
+            nameSelect.innerHTML = '<option value="">-- Select your name --</option>';
+            
+            // Add each user as an option
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user;
+                option.textContent = user;
+                nameSelect.appendChild(option);
+            });
+            
+            // Show the toggle button only if there are users
+            if (users.length > 0) {
+                toggleBtn.style.display = 'block';
+            }
+        }
+        
+        // Update the users count display
+        function updateUsersCount(count) {
+            if (count > 0) {
+                usersCountDiv.textContent = `${count} previous user${count === 1 ? '' : 's'} found`;
+            } else {
+                usersCountDiv.textContent = '';
+            }
+        }
+        
+        // Handle form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Get the name from whichever input is active
+            const userName = useDropdown ? 
+                nameSelect.value.trim() : 
+                nameInput.value.trim();
+            const itemSelect = document.getElementById('itemSelect').value;
+            
+            // Basic validation
+            if (!userName) {
+                showMessage('Please enter or select your name', 'error');
+                return;
+            }
+            
+            if (!itemSelect) {
+                showMessage('Please select an item', 'error');
+                return;
+            }
+            
+            // Disable submit button during submission
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Logging...';
+            
+            try {
+                // Create the data object to send
+                const formData = new FormData();
+                formData.append('name', userName);
+                formData.append('item', itemSelect);
+                formData.append('timestamp', new Date().toISOString());
+                formData.append('action', 'logItem');
+                
+                // Send POST request to Google Apps Script
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    showMessage('Item logged successfully! ✅', 'success');
+                    
+                    // If this is a new user (using text input), add them to the dropdown
+                    if (!useDropdown && !existingUsers.includes(userName)) {
+                        existingUsers.push(userName);
+                        existingUsers.sort(); // Keep alphabetical order
+                        populateUserDropdown(existingUsers);
+                        updateUsersCount(existingUsers.length);
+                    }
+                    
+                    // Clear the form
+                    if (useDropdown) {
+                        nameSelect.value = '';
+                    } else {
+                        nameInput.value = '';
+                    }
+                    document.getElementById('itemSelect').value = '';
+                    
+                } else {
+                    throw new Error('Network response was not ok');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error logging item. Please try again. ❌', 'error');
+            } finally {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Log Item';
+            }
+        });
+        
+        // Function to show success/error messages
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            // Hide message after 5 seconds
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Clear message when user interacts with form
+        [nameInput, nameSelect, document.getElementById('itemSelect')].forEach(element => {
+            element.addEventListener('input', () => {
+                messageDiv.style.display = 'none';
+            });
+            element.addEventListener('change', () => {
+                messageDiv.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>
