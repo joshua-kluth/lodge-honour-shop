@@ -272,6 +272,103 @@
             text-decoration: none;
         }
 
+        .info-button {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #007bff;
+            color: white;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            position: relative;
+            top: -4px;
+        }
+
+        .info-button:hover {
+            background: #0056b3;
+            transform: scale(1.1);
+        }
+
+        /* Popup Overlay */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1001;
+        }
+
+        /* Popup Content */
+        .popup-content {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        /* Close Button */
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none !important; 
+            border: none !important;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            line-height: 1;
+            width: auto !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+        }
+
+        .close-button:hover {
+            color: #000;
+        }
+
+        /* Content Styles */
+        .popup-content h2 {
+            margin-top: 0;
+            color: #333;
+            font-size: 24px;
+        }
+
+        .popup-content p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .popup-content ul {
+            color: #666;
+            line-height: 1.6;
+            padding-left: 20px;
+        }
+
+        /* Show popup when active */
+        .popup-overlay.active {
+            display: block;
+        }
+
         @media (max-width: 600px) {
             .item-row {
                 flex-direction: column;
@@ -287,7 +384,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>🏪 Lodge Shop Logger</h1>
+        <h1>🏪 Lodge Shop Logger <button class="info-button" onclick="openPopup()">i</button></h1>
+        
         
         <div id="loadingData" class="loading" style="display: none;">
             Loading data...
@@ -336,6 +434,36 @@
             <a href="https://docs.google.com/spreadsheets/d/1Ugzw97_bIJZnlpe7DlRE8mrdj0glGz0Hu3EJc0B2nWo/edit?usp=sharing" target="_blank" class="bottom-btn">Honour Shop Log</a>
         </div>
     </div>
+
+
+    <!--Popup Information-->
+    <div class="popup-overlay" id="popupOverlay" onclick="closePopup()">
+        <div class="popup-content" onclick="event.stopPropagation()">
+            <button class="close-button" onclick="closePopup()">&times;</button>
+            
+            <!-- Your Information Content (customize this section) -->
+            <h2>Information here</h2>
+        
+        </div>
+    </div>
+
+    <!--Info Popup Script-->
+    <script>
+        function openPopup() {
+            document.getElementById('popupOverlay').classList.add('active');
+        }
+
+        function closePopup() {
+            document.getElementById('popupOverlay').classList.remove('active');
+        }
+
+        // Close popup when pressing Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closePopup();
+            }
+        });
+    </script>
 
     <script>
         // *** IMPORTANT: Replace this URL with your Google Apps Script web app URL ***
